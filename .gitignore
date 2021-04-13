@@ -136,3 +136,19 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+*.h
+PyAudioControllerEnv/Scripts/pythonw.exe
+PyAudioControllerEnv/Scripts/python.exe
+PyAudioControllerEnv/Scripts/pip3.exe
+PyAudioControllerEnv/Scripts/pip3.8.exe
+PyAudioControllerEnv/Scripts/pip.exe
+PyAudioControllerEnv/Scripts/deactivate.bat
+PyAudioControllerEnv/Scripts/Activate.ps1
+PyAudioControllerEnv/Scripts/activate.bat
+PyAudioControllerEnv/Scripts/activate
+PyAudioControllerEnv/pyvenv.cfg
+.idea/vcs.xml
+.idea/UWP-CS-3030-Project.iml
+.idea/modules.xml
+.idea/misc.xml
+.idea/inspectionProfiles/profiles_settings.xml
