@@ -37,13 +37,13 @@
 # THE SOFTWARE.
 
 from random import randrange as rand
-import pygame, sys
+import pygame, sys, neat, os, numpy
 
 # The configuration
 cell_size = 18
 cols =      10
 rows =      22
-maxfps =    30
+maxfps =    300
 
 colors = [
 (0,   0,   0  ),
@@ -58,7 +58,10 @@ colors = [
 ]
 
 # Define the shapes of the single parts
+
+
 tetris_shapes = [
+
     [[1, 1, 1],
      [0, 1, 0]],
 
@@ -73,8 +76,9 @@ tetris_shapes = [
 
     [[0, 0, 5],
      [5, 5, 5]],
-
-    [[6, 6, 6, 6]],
+    [
+        [6, 6, 6, 6]
+    ],
 
     [[7, 7],
      [7, 7]]
@@ -153,7 +157,7 @@ class TetrisApp(object):
         self.level = 1
         self.score = 0
         self.lines = 0
-        pygame.time.set_timer(pygame.USEREVENT+1, 1000)
+        pygame.time.set_timer(pygame.USEREVENT+1, 1)
 
     def disp_msg(self, msg, topleft):
         x,y = topleft
@@ -197,14 +201,14 @@ class TetrisApp(object):
                             cell_size),0)
 
     def add_cl_lines(self, n):
-        linescores = [0, 40, 100, 300, 1200]
+        linescores = [0, 400, 1000, 3000, 12000]
         self.lines += n
         self.score += linescores[n] * self.level
         if self.lines >= self.level*6:
             self.level += 1
             newdelay = 1000-50*(self.level-1)
             newdelay = 100 if newdelay < 100 else newdelay
-            pygame.time.set_timer(pygame.USEREVENT+1, newdelay)
+            pygame.time.set_timer(pygame.USEREVENT+1, newdelay  / 100)
 
     def move(self, delta_x):
         if not self.gameover and not self.paused:
@@ -224,7 +228,7 @@ class TetrisApp(object):
 
     def drop(self, manual):
         if not self.gameover and not self.paused:
-            self.score += 1 if manual else 0
+            self.score += .1 if manual else 0
             self.stone_y += 1
             if check_collision(self.board,
                                self.stone,
@@ -269,7 +273,7 @@ class TetrisApp(object):
             self.init_game()
             self.gameover = False
 
-    def run(self):
+    def run(self, net, agent):
         key_actions = {
             'ESCAPE':   self.quit,
             'LEFT':     lambda:self.move(-1),
@@ -284,47 +288,65 @@ class TetrisApp(object):
         self.gameover = False
         self.paused = False
 
-        dont_burn_my_cpu = pygame.time.Clock()
+       # dont_burn_my_cpu = pygame.time.Clock()
         while 1:
             self.screen.fill((0,0,0))
             if self.gameover:
-                self.center_msg("""Game Over!\nYour score: %d
-Press space to continue""" % self.score)
+                return self.score
             else:
-                if self.paused:
-                    self.center_msg("Paused")
-                else:
-                    pygame.draw.line(self.screen,
-                        (255,255,255),
-                        (self.rlim+1, 0),
-                        (self.rlim+1, self.height-1))
-                    self.disp_msg("Next:", (
-                        self.rlim+cell_size,
-                        2))
-                    self.disp_msg("Score: %d\n\nLevel: %d\
-\nLines: %d" % (self.score, self.level, self.lines),
-                        (self.rlim+cell_size, cell_size*5))
-                    self.draw_matrix(self.bground_grid, (0,0))
-                    self.draw_matrix(self.board, (0,0))
-                    self.draw_matrix(self.stone,
-                        (self.stone_x, self.stone_y))
-                    self.draw_matrix(self.next_stone,
-                        (cols+1,2))
+                pygame.draw.line(self.screen,(255,255,255),(self.rlim+1, 0),(self.rlim+1, self.height-1))
+                self.disp_msg("Next:", (self.rlim+cell_size, 2))
+                self.disp_msg("Score: %d\n\nLevel: %d\nLines: %d" % (self.score, self.level, self.lines), (self.rlim+cell_size, cell_size*5))
+                self.draw_matrix(self.bground_grid, (0,0))
+                self.draw_matrix(self.board, (0,0))
+                self.draw_matrix(self.stone, (self.stone_x, self.stone_y))
+                self.draw_matrix(self.next_stone, (cols+1,2))
             pygame.display.update()
 
-            for event in pygame.event.get():
-                if event.type == pygame.USEREVENT+1:
-                    self.drop(False)
-                elif event.type == pygame.QUIT:
-                    self.quit()
-                elif event.type == pygame.KEYDOWN:
-                    for key in key_actions:
-                        if event.key == eval("pygame.K_"
-                        +key):
-                            key_actions[key]()
+            stone = [0] * 32
+            next_stone = [0] * 32
 
-            dont_burn_my_cpu.tick(maxfps)
+            for index, val in enumerate(numpy.concatenate(self.stone)):
+                stone[index] = val
+            
+            for index, val in enumerate(numpy.concatenate(self.next_stone)):
+                next_stone[index] = val
+                
+            decision = net.activate((*numpy.concatenate(self.board), *stone, self.stone_x, self.stone_y, *next_stone))
 
+            options = ['LEFT','RIGHT','DOWN','UP']
+            for i in range(len(options)):
+                if decision[i] > .5:
+                    key_actions[options[i]]()
+                    break
+                    
+
+            self.drop(False)
+            #dont_burn_my_cpu.tick(maxfps)
+
+
+def eval_genomes(genomes, config):
+    nets = []
+    ge = []
+
+    for _, genome in genomes:
+        net = neat.nn.FeedForwardNetwork.create(genome, config)
+        genome.fitness = 0
+        ge.append(genome)
+        nets.append(net)
+        App = TetrisApp()
+        genome.fitness += App.run(net, genome)
+        del App
 if __name__ == '__main__':
-    App = TetrisApp()
-    App.run()
+    config_path = os.path.join(os.getcwd(), "NEATconfig.txt")
+    config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction, 
+    neat.DefaultSpeciesSet, neat.DefaultStagnation, config_path)
+
+    population = neat.Population(config)
+
+    population.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    population.add_reporter(stats)
+
+    winner = population.run(eval_genomes , 100)
+
