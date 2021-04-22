@@ -38,11 +38,8 @@
 
 from random import randrange as rand
 import pygame, sys
-import tetris_driver
 
 # The configuration
-from tetris_agent import TetrisAgent
-
 cell_size = 18
 cols =      10
 rows =      22
@@ -137,28 +134,6 @@ class TetrisApp(object):
                                                      # events, so we
                                                      # block them.
         self.next_stone = tetris_shapes[rand(len(tetris_shapes))]
-
-        self.key_actions = {
-            'ESCAPE': self.quit,
-            'p': self.toggle_pause,
-            'SPACE': self.start_game,
-            'LEFT': lambda: self.move(-1),
-            'RIGHT': lambda: self.move(+1),
-            'DOWN': lambda: self.drop(True),
-            'UP': self.rotate_stone,
-            'RETURN': self.insta_drop
-        }
-
-        self.driver = tetris_driver.TetrisDriver(self.key_actions, lambda : self.board, lambda: (self.stone, self.stone_x, self.stone_y))
-        self.agent = TetrisAgent(self.driver)
-
-        for _ in range(10):
-            for i in range(4):
-                self.driver.enqueue_action("LEFT")
-
-            for i in range(4):
-                self.driver.enqueue_action("RIGHT")
-
         self.init_game()
 
     def new_stone(self):
@@ -171,8 +146,6 @@ class TetrisApp(object):
                            self.stone,
                            (self.stone_x, self.stone_y)):
             self.gameover = True
-        else:
-            self.agent.make_plan()
 
     def init_game(self):
         self.board = new_board()
@@ -297,7 +270,16 @@ class TetrisApp(object):
             self.gameover = False
 
     def run(self):
-
+        key_actions = {
+            'ESCAPE':   self.quit,
+            'LEFT':     lambda:self.move(-1),
+            'RIGHT':    lambda:self.move(+1),
+            'DOWN':     lambda:self.drop(True),
+            'UP':       self.rotate_stone,
+            'p':        self.toggle_pause,
+            'SPACE':    self.start_game,
+            'RETURN':   self.insta_drop
+        }
 
         self.gameover = False
         self.paused = False
@@ -330,20 +312,16 @@ Press space to continue""" % self.score)
                         (cols+1,2))
             pygame.display.update()
 
-            if self.driver.next_move_ready():
-                action = self.driver.get_next_move()
-                self.key_actions[action]()
-
             for event in pygame.event.get():
                 if event.type == pygame.USEREVENT+1:
                     self.drop(False)
-                if event.type == pygame.QUIT:
+                elif event.type == pygame.QUIT:
                     self.quit()
-                #elif event.type == pygame.KEYDOWN:
-                #    for key in key_actions:
-                #        if event.key == eval("pygame.K_"
-                #        +key):
-                #            key_actions[key]()
+                elif event.type == pygame.KEYDOWN:
+                    for key in key_actions:
+                        if event.key == eval("pygame.K_"
+                        +key):
+                            key_actions[key]()
 
             dont_burn_my_cpu.tick(maxfps)
 
