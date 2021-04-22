@@ -38,7 +38,9 @@
 
 from random import randrange as rand
 import pygame, sys, neat, os, numpy
-
+import pickle
+OUTPUT_FILE_PATH = "winner.pkl"
+INPUT_FILE_PATH = "winner.pkl"
 # The configuration
 cell_size = 18
 cols =      10
@@ -208,7 +210,7 @@ class TetrisApp(object):
             self.level += 1
             newdelay = 1000-50*(self.level-1)
             newdelay = 100 if newdelay < 100 else newdelay
-            pygame.time.set_timer(pygame.USEREVENT+1, newdelay  / 100)
+            pygame.time.set_timer(pygame.USEREVENT+1, newdelay  / 5)
 
     def move(self, delta_x):
         if not self.gameover and not self.paused:
@@ -324,10 +326,21 @@ class TetrisApp(object):
             self.drop(False)
             #dont_burn_my_cpu.tick(maxfps)
 
+GEN = 0
 
 def eval_genomes(genomes, config):
+    global GEN
     nets = []
     ge = []
+    
+    GEN+=1
+    if GEN == 0:
+        try:
+            with open(INPUT_FILE_PATH, 'rb') as previous_best:
+                genome = pickle.load(previous_best)
+                genomes.append(len(genomes), genome)
+        except:
+            print("Cannot load previous best")
 
     for _, genome in genomes:
         net = neat.nn.FeedForwardNetwork.create(genome, config)
@@ -348,5 +361,9 @@ if __name__ == '__main__':
     stats = neat.StatisticsReporter()
     population.add_reporter(stats)
 
-    winner = population.run(eval_genomes , 100)
+    winner = population.run(eval_genomes , 2)
+
+    with open(OUTPUT_FILE_PATH, "wb") as f:
+        pickle.dump(winner, f)
+        f.close()
 
