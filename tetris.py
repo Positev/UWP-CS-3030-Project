@@ -37,7 +37,7 @@
 # THE SOFTWARE.
 
 from random import randrange as rand
-import pygame, sys, neat, os, numpy
+import pygame, sys, neat, os, numpy,time
 import pickle
 OUTPUT_FILE_PATH = "winner.pkl"
 INPUT_FILE_PATH = "winner.pkl"
@@ -45,7 +45,7 @@ INPUT_FILE_PATH = "winner.pkl"
 cell_size = 18
 cols =      10
 rows =      22
-maxfps =    300
+maxfps =    30
 
 colors = [
 (0,   0,   0  ),
@@ -97,7 +97,8 @@ def check_collision(board, shape, offset):
     for cy, row in enumerate(shape):
         for cx, cell in enumerate(row):
             try:
-                if cell and board[ cy + off_y ][ cx + off_x ]:
+                board_cell = board[ cy + off_y ][ cx + off_x ]
+                if cell and board_cell:
                     return True
             except IndexError:
                 return True
@@ -121,6 +122,16 @@ def new_board():
     ]
     board += [[ 1 for x in range(cols)]]
     return board
+
+def calculate_fitness(score, board):
+    fitness = score
+    
+    board.pop()
+    rboard = list(reversed(board))
+    for row in rboard:
+        score += (len([x for x in row if x != 0]) ** 2)  / 10
+    return score
+
 
 class TetrisApp(object):
     def __init__(self):
@@ -159,7 +170,7 @@ class TetrisApp(object):
         self.level = 1
         self.score = 0
         self.lines = 0
-        pygame.time.set_timer(pygame.USEREVENT+1, 1)
+        pygame.time.set_timer(pygame.USEREVENT+1, 200)
 
     def disp_msg(self, msg, topleft):
         x,y = topleft
@@ -290,11 +301,13 @@ class TetrisApp(object):
         self.gameover = False
         self.paused = False
 
-       # dont_burn_my_cpu = pygame.time.Clock()
+        dont_burn_my_cpu = pygame.time.Clock()
         while 1:
             self.screen.fill((0,0,0))
             if self.gameover:
-                return self.score
+                fitness = calculate_fitness(self.score, self.board)
+                print(fitness)
+                return fitness
             else:
                 pygame.draw.line(self.screen,(255,255,255),(self.rlim+1, 0),(self.rlim+1, self.height-1))
                 self.disp_msg("Next:", (self.rlim+cell_size, 2))
@@ -303,16 +316,14 @@ class TetrisApp(object):
                 self.draw_matrix(self.board, (0,0))
                 self.draw_matrix(self.stone, (self.stone_x, self.stone_y))
                 self.draw_matrix(self.next_stone, (cols+1,2))
+            
             pygame.display.update()
 
-            stone = [0] * 32
-            next_stone = [0] * 32
+            stone = numpy.concatenate(self.stone)
+            next_stone = numpy.concatenate(self.stone)
 
-            for index, val in enumerate(numpy.concatenate(self.stone)):
-                stone[index] = val
-            
-            for index, val in enumerate(numpy.concatenate(self.next_stone)):
-                next_stone[index] = val
+            stone = numpy.append(stone, [0] * (12 - len(stone)))
+            next_stone = numpy.append(next_stone, [0] * (12 - len(next_stone)))
                 
             decision = net.activate((*numpy.concatenate(self.board), *stone, self.stone_x, self.stone_y, *next_stone))
 
@@ -321,10 +332,10 @@ class TetrisApp(object):
                 if decision[i] > .5:
                     key_actions[options[i]]()
                     break
-                    
 
             self.drop(False)
-            #dont_burn_my_cpu.tick(maxfps)
+            dont_burn_my_cpu.tick(maxfps)
+            time.sleep(.01)
 
 GEN = 0
 
@@ -361,7 +372,7 @@ if __name__ == '__main__':
     stats = neat.StatisticsReporter()
     population.add_reporter(stats)
 
-    winner = population.run(eval_genomes , 2)
+    winner = population.run(eval_genomes , 100)
 
     with open(OUTPUT_FILE_PATH, "wb") as f:
         pickle.dump(winner, f)
