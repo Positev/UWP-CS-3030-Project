@@ -8,12 +8,12 @@ reset_on_extinction   = False
 [DefaultGenome]
 # node activation options
 activation_default      = tanh
-activation_mutate_rate  = 0.0
+activation_mutate_rate  = 0.4
 activation_options      = tanh
 
 # node aggregation options
 aggregation_default     = sum
-aggregation_mutate_rate = 0.0
+aggregation_mutate_rate = 0.3
 aggregation_options     = sum
 
 # node bias options
@@ -41,11 +41,11 @@ feed_forward            = True
 initial_connection      = full
 
 # node add/remove rates
-node_add_prob           = 0.4
+node_add_prob           = 0.6
 node_delete_prob        = 0.2
 
 # network parameters
-num_hidden              = 100
+num_hidden              = 150
 num_inputs              = 256
 num_outputs             = 4
 
@@ -73,7 +73,7 @@ compatibility_threshold = 3.0
 [DefaultStagnation]
 species_fitness_func = max
 max_stagnation       = 8
-species_elitism      = 2
+species_elitism      = 4
 
 [DefaultReproduction]
 elitism            = 2

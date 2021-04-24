@@ -123,13 +123,23 @@ def new_board():
     board += [[ 1 for x in range(cols)]]
     return board
 
+def find_longest_streak(row):
+    cnt, max_val = 0, 0 # running count, and max count
+    for e in row: 
+        cnt = cnt + 1 if e != 0 else 0  # add to or reset running count
+        max_val = max(cnt, max_val) # update max count
+    return max_val
+
 def calculate_fitness(score, board):
     fitness = score
     
     board.pop()
     rboard = list(reversed(board))
     for row in rboard:
-        score += (len([x for x in row if x != 0]) ** 2)  / 10
+        score += len([x for x in row if x != 0])
+        streak = find_longest_streak(row)
+        if streak > 6:
+            score += streak ** 2
     return score
 
 
@@ -170,7 +180,7 @@ class TetrisApp(object):
         self.level = 1
         self.score = 0
         self.lines = 0
-        pygame.time.set_timer(pygame.USEREVENT+1, 200)
+        pygame.time.set_timer(pygame.USEREVENT+1, 100)
 
     def disp_msg(self, msg, topleft):
         x,y = topleft
@@ -214,7 +224,7 @@ class TetrisApp(object):
                             cell_size),0)
 
     def add_cl_lines(self, n):
-        linescores = [0, 400, 1000, 3000, 12000]
+        linescores = [0,1000, 3000, 12000,24000]
         self.lines += n
         self.score += linescores[n] * self.level
         if self.lines >= self.level*6:
@@ -335,7 +345,6 @@ class TetrisApp(object):
 
             self.drop(False)
             dont_burn_my_cpu.tick(maxfps)
-            time.sleep(.01)
 
 GEN = 0
 
