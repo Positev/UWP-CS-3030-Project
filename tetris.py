@@ -36,8 +36,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+HEADLESS = True
 from random import randrange as rand
-import pygame, sys, neat, os, numpy,time
+if not HEADLESS:
+    import pygame
+import sys, neat, os, numpy,time
 import pickle
 from heuristics import *
 OUTPUT_FILE_PATH = "winner.pkl"
@@ -147,18 +150,20 @@ def calculate_fitness(score, board):
 class TetrisApp(object):
     def __init__(self, genome):
         self.genome = genome
-        pygame.init()
-        pygame.key.set_repeat(250,25)
+        if not HEADLESS:
+            pygame.init()
+            pygame.key.set_repeat(250,25)
         self.width = cell_size*(cols+6)
         self.height = cell_size*rows
         self.rlim = cell_size*cols
         self.bground_grid = [[ 8 if x%2==y%2 else 0 for x in range(cols)] for y in range(rows)]
 
-        self.default_font =  pygame.font.Font(
-            pygame.font.get_default_font(), 12)
+        if not HEADLESS:
+            self.default_font =  pygame.font.Font(
+                pygame.font.get_default_font(), 12)
 
-        self.screen = pygame.display.set_mode((self.width, self.height))
-        pygame.event.set_blocked(pygame.MOUSEMOTION) # We do not need
+            self.screen = pygame.display.set_mode((self.width, self.height))
+            pygame.event.set_blocked(pygame.MOUSEMOTION) # We do not need
                                                      # mouse movement
                                                      # events, so we
                                                      # block them.
@@ -184,7 +189,8 @@ class TetrisApp(object):
         self.level = 1
         self.score = 0
         self.lines = 0
-        pygame.time.set_timer(pygame.USEREVENT+1, 100)
+        if not HEADLESS:
+            pygame.time.set_timer(pygame.USEREVENT+1, 100)
 
     def disp_msg(self, msg, topleft):
         x,y = topleft
@@ -237,7 +243,9 @@ class TetrisApp(object):
             self.level += 1
             newdelay = 1000-50*(self.level-1)
             newdelay = 100 if newdelay < 100 else newdelay
-            pygame.time.set_timer(pygame.USEREVENT+1, newdelay  / 5)
+            
+            if not HEADLESS:
+                pygame.time.set_timer(pygame.USEREVENT+1, newdelay  / 5)
 
     def move(self, delta_x):
         if not self.gameover and not self.paused:
@@ -252,7 +260,8 @@ class TetrisApp(object):
                 self.stone_x = new_x
     def quit(self):
         self.center_msg("Exiting...")
-        pygame.display.update()
+        if not HEADLESS:
+            pygame.display.update()
         sys.exit()
 
     def drop(self, manual):
@@ -317,14 +326,16 @@ class TetrisApp(object):
         self.gameover = False
         self.paused = False
 
-        dont_burn_my_cpu = pygame.time.Clock()
+        if not HEADLESS:
+            dont_burn_my_cpu = pygame.time.Clock()
         while 1:
-            self.screen.fill((0,0,0))
+            if not HEADLESS:
+                self.screen.fill((0,0,0))
             if self.gameover:
                 self.genome.fitness -= compute_endgame_fitness(self.board)
                 #print(fitness)
                 return self.genome.fitness
-            else:
+            elif not HEADLESS:
                 pygame.draw.line(self.screen,(255,255,255),(self.rlim+1, 0),(self.rlim+1, self.height-1))
                 self.disp_msg("Next:", (self.rlim+cell_size, 2))
                 self.disp_msg("Score: %d\n\nLevel: %d\nLines: %d" % (self.score, self.level, self.lines), (self.rlim+cell_size, cell_size*5))
@@ -333,7 +344,8 @@ class TetrisApp(object):
                 self.draw_matrix(self.stone, (self.stone_x, self.stone_y))
                 self.draw_matrix(self.next_stone, (cols+1,2))
             
-            pygame.display.update()
+            if not HEADLESS:
+                pygame.display.update()
 
             stone = numpy.concatenate(self.stone)
             next_stone = numpy.concatenate(self.stone)
@@ -354,7 +366,8 @@ class TetrisApp(object):
             
 
             self.drop(False)
-            dont_burn_my_cpu.tick(maxfps)
+            if not HEADLESS:
+                dont_burn_my_cpu.tick(maxfps)
 
 GEN = 0
 
