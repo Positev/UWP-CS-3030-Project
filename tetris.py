@@ -22,7 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-HEADLESS = True
+HEADLESS = False
 from random import randrange as rand
 if not HEADLESS:
     import pygame
@@ -50,7 +50,7 @@ if not os.path.exists(RUN_PATH):
 LOG_FILE = os.path.join(RUN_PATH, 'LOG.TXT')
 SCRIPT_NAME = 'tetris.py'
 CONFIG_NAME = 'NEATconfig.txt'
-HEADLESS = True
+HEADLESS = False
 
 shutil.copyfile(os.path.join(os.getcwd(), SCRIPT_NAME), os.path.join(RUN_PATH, SCRIPT_NAME))
 shutil.copyfile(os.path.join(os.getcwd(), CONFIG_NAME), os.path.join(RUN_PATH, CONFIG_NAME))
@@ -189,7 +189,14 @@ class TetrisApp(object):
 
     def new_stone(self, first = False):
         if not first:
-            self.genome.fitness -= compute_midgame_fitness(self.board)
+            if self.prev_fitness == 0:
+                    fitness = compute_midgame_fitness(self.board)
+                    self.genome.fitness -= fitness
+                    self.prev_fitness = fitness
+            else:
+                fitness = compute_midgame_fitness(self.board) - self.prev_fitness
+                self.prev_fitness = fitness
+                self.genome.fitness -= fitness
         self.stone = self.next_stone[:]
         self.next_stone = tetris_shapes[rand(len(tetris_shapes))]
         self.stone_x = int(cols / 2 - len(self.stone[0])/2)
@@ -212,7 +219,7 @@ class TetrisApp(object):
         self.lines = 0
         self.drop_time = .01
         if not HEADLESS:
-            pygame.time.set_timer(pygame.USEREVENT+1, self.drop_time)
+            pygame.time.set_timer(pygame.USEREVENT+1, int(self.drop_time * 100))
         else:
             self.drop_timer()
 
@@ -393,26 +400,18 @@ class TetrisApp(object):
             for i in range(len(options)):
                 if decision[i] > .5:
                     key_actions[options[i]]()
+                    break
 
 
             if not HEADLESS:
                 dont_burn_my_cpu.tick(maxfps)
                 for event in pygame.event.get():
-                    if event.type == pygame.USEREVENT+1:
-                        self.drop(False)
-                    elif event.type == pygame.QUIT:
+                    if event.type == pygame.QUIT:
                         self.quit()
-            else:
-                self.drop(False)
+            #else:
+            self.drop(False)
 
-            if self.prev_fitness == 0:
-                    fitness = compute_midgame_fitness(self.board)
-                    self.genome.fitness -= fitness
-                    self.prev_fitness = fitness
-            else:
-                fitness = compute_midgame_fitness(self.board) - self.prev_fitness
-                self.prev_fitness = fitness
-                self.genome.fitness -= fitness
+            
 
 class FileReporter(neat.reporting.BaseReporter):
     """Uses `print` to output information about the run; an example reporter class."""
@@ -517,7 +516,7 @@ def eval_genomes(genomes, config):
         App = TetrisApp(genome)
         App.run(net, genome)
         print(genome.fitness)
-        del App
+        #del App
         
     ids = []
     fits = []
