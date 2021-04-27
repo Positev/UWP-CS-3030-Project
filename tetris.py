@@ -22,7 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-HEADLESS = False
+HEADLESS = True
 from random import randrange as rand
 if not HEADLESS:
     import pygame
@@ -50,7 +50,6 @@ if not os.path.exists(RUN_PATH):
 LOG_FILE = os.path.join(RUN_PATH, 'LOG.TXT')
 SCRIPT_NAME = 'tetris.py'
 CONFIG_NAME = 'NEATconfig.txt'
-HEADLESS = False
 
 shutil.copyfile(os.path.join(os.getcwd(), SCRIPT_NAME), os.path.join(RUN_PATH, SCRIPT_NAME))
 shutil.copyfile(os.path.join(os.getcwd(), CONFIG_NAME), os.path.join(RUN_PATH, CONFIG_NAME))
