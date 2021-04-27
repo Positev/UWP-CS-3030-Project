@@ -267,6 +267,7 @@ class TetrisApp(object):
         linescores = [0,1000, 3000, 12000,24000]
         self.lines += n
         if n > 0:
+            print("Line Cleared")
             self.genome.fitness += 10000
         self.score += linescores[n] * self.level
         if self.lines >= self.level*6:
