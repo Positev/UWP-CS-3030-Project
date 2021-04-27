@@ -343,6 +343,7 @@ class TetrisApp(object):
             self.gameover = False
 
     def run(self, net, agent):
+        self.prev_fitness = 0
         key_actions = {
             'ESCAPE':   self.quit,
             'LEFT':     lambda:self.move(-1),
@@ -363,7 +364,7 @@ class TetrisApp(object):
             if not HEADLESS:
                 self.screen.fill((0,0,0))
             if self.gameover:
-                self.genome.fitness -= compute_endgame_fitness(self.board)
+                
                 #print(fitness)
                 return self.genome.fitness
             elif not HEADLESS:
@@ -401,6 +402,17 @@ class TetrisApp(object):
                         self.drop(False)
                     elif event.type == pygame.QUIT:
                         self.quit()
+            else:
+                self.drop(False)
+
+            if self.prev_fitness == 0:
+                    fitness = compute_midgame_fitness(self.board)
+                    self.genome.fitness -= fitness
+                    self.prev_fitness = fitness
+            else:
+                fitness = compute_midgame_fitness(self.board) - self.prev_fitness
+                self.prev_fitness = fitness
+                self.genome.fitness -= fitness
 
 class FileReporter(neat.reporting.BaseReporter):
     """Uses `print` to output information about the run; an example reporter class."""
@@ -527,7 +539,7 @@ if __name__ == '__main__':
     stats = neat.StatisticsReporter()
     population.add_reporter(stats)
 
-    winner = population.run(eval_genomes , 120)
+    winner = population.run(eval_genomes , 40)
 
     with open(OUTPUT_FILE_PATH, "wb") as f:
         pickle.dump(winner, f)

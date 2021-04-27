@@ -113,7 +113,7 @@ def compute_midgame_fitness(board):
 
     holes = hole_count(board)
     print(f"Bumpiness: {bumps}, Holes: {holes}, Pits: {pits}")
-    return bumps * 2 + pits * 6+ max_height + holes * 3
+    return bumps * 1 + pits * 3+ max_height + holes * 2
 
 def compute_endgame_fitness(board):
     board = clean_board(board)
