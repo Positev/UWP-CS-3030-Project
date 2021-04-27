@@ -39,6 +39,7 @@
 from random import randrange as rand
 import pygame, sys, neat, os, numpy,time
 import pickle
+from heuristics import *
 OUTPUT_FILE_PATH = "winner.pkl"
 INPUT_FILE_PATH = "winner.pkl"
 # The configuration
@@ -144,7 +145,8 @@ def calculate_fitness(score, board):
 
 
 class TetrisApp(object):
-    def __init__(self):
+    def __init__(self, genome):
+        self.genome = genome
         pygame.init()
         pygame.key.set_repeat(250,25)
         self.width = cell_size*(cols+6)
@@ -163,7 +165,9 @@ class TetrisApp(object):
         self.next_stone = tetris_shapes[rand(len(tetris_shapes))]
         self.init_game()
 
-    def new_stone(self):
+    def new_stone(self, first = False):
+        if not first:
+            self.genome.fitness -= compute_midgame_fitness(self.board)
         self.stone = self.next_stone[:]
         self.next_stone = tetris_shapes[rand(len(tetris_shapes))]
         self.stone_x = int(cols / 2 - len(self.stone[0])/2)
@@ -176,7 +180,7 @@ class TetrisApp(object):
 
     def init_game(self):
         self.board = new_board()
-        self.new_stone()
+        self.new_stone(first=True)
         self.level = 1
         self.score = 0
         self.lines = 0
@@ -226,6 +230,8 @@ class TetrisApp(object):
     def add_cl_lines(self, n):
         linescores = [0,1000, 3000, 12000,24000]
         self.lines += n
+        if n > 0:
+            self.genome.fitness += 10000
         self.score += linescores[n] * self.level
         if self.lines >= self.level*6:
             self.level += 1
@@ -315,9 +321,9 @@ class TetrisApp(object):
         while 1:
             self.screen.fill((0,0,0))
             if self.gameover:
-                fitness = calculate_fitness(self.score, self.board)
-                print(fitness)
-                return fitness
+                self.genome.fitness -= compute_endgame_fitness(self.board)
+                #print(fitness)
+                return self.genome.fitness
             else:
                 pygame.draw.line(self.screen,(255,255,255),(self.rlim+1, 0),(self.rlim+1, self.height-1))
                 self.disp_msg("Next:", (self.rlim+cell_size, 2))
@@ -337,11 +343,15 @@ class TetrisApp(object):
                 
             decision = net.activate((*numpy.concatenate(self.board), *stone, self.stone_x, self.stone_y, *next_stone))
 
-            options = ['LEFT','RIGHT','DOWN','UP']
+            clean_board(self.board)
+
+            options = ['LEFT','RIGHT','DOWN','UP', 'RETURN']
             for i in range(len(options)):
                 if decision[i] > .5:
                     key_actions[options[i]]()
-                    break
+                    
+
+            
 
             self.drop(False)
             dont_burn_my_cpu.tick(maxfps)
@@ -367,8 +377,9 @@ def eval_genomes(genomes, config):
         genome.fitness = 0
         ge.append(genome)
         nets.append(net)
-        App = TetrisApp()
-        genome.fitness += App.run(net, genome)
+        App = TetrisApp(genome)
+        App.run(net, genome)
+        print(genome.fitness)
         del App
 if __name__ == '__main__':
     config_path = os.path.join(os.getcwd(), "NEATconfig.txt")
@@ -381,7 +392,7 @@ if __name__ == '__main__':
     stats = neat.StatisticsReporter()
     population.add_reporter(stats)
 
-    winner = population.run(eval_genomes , 100)
+    winner = population.run(eval_genomes , 40)
 
     with open(OUTPUT_FILE_PATH, "wb") as f:
         pickle.dump(winner, f)
