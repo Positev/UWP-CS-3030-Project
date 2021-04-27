@@ -27,7 +27,7 @@ from random import randrange as rand
 if not HEADLESS:
     import pygame
 import sys, neat, os, numpy,time
-import threading
+import threading, datetime
 import pickle, shutil
 from heuristics import *
 
@@ -39,7 +39,7 @@ plt.style.use('seaborn-whitegrid')
 import numpy as np
 from stat import S_IREAD, S_IRGRP, S_IROTH
 
-RUN_ID = input("Name this run: ")
+RUN_ID = str(datetime.datetime.now()).replace(":","_").replace("-","_").replace(" ","_")
 RUNS_PATH = os.path.join(os.getcwd(), 'Runs')
 if not os.path.exists(RUNS_PATH):
     os.mkdir(RUNS_PATH)
@@ -526,7 +526,7 @@ if __name__ == '__main__':
     stats = neat.StatisticsReporter()
     population.add_reporter(stats)
 
-    winner = population.run(eval_genomes , 50)
+    winner = population.run(eval_genomes , 75)
 
     with open(OUTPUT_FILE_PATH, "wb") as f:
         pickle.dump(winner, f)
