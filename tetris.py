@@ -537,7 +537,7 @@ if __name__ == '__main__':
     stats = neat.StatisticsReporter()
     population.add_reporter(stats)
 
-    winner = population.run(eval_genomes , 40)
+    winner = population.run(eval_genomes , 100)
 
     with open(OUTPUT_FILE_PATH, "wb") as f:
         pickle.dump(winner, f)
