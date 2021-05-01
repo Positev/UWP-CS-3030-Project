@@ -159,6 +159,7 @@ def calculate_fitness(score, board):
         if streak > 6:
             score += streak ** 2
     return score
+    del rboard
 
 
 class TetrisApp(object):
@@ -351,7 +352,6 @@ class TetrisApp(object):
     def run(self, net, agent):
         self.prev_fitness = 0
         key_actions = {
-            'ESCAPE':   self.quit,
             'LEFT':     lambda:self.move(-1),
             'RIGHT':    lambda:self.move(+1),
             'DOWN':     lambda:self.drop(True),
@@ -368,7 +368,10 @@ class TetrisApp(object):
             dont_burn_my_cpu = pygame.time.Clock()
         while 1:
             if not HEADLESS:
-                self.screen.fill((0,0,0))
+                try:
+                    self.screen.fill((0,0,0))
+                except:
+                    break
             if self.gameover:
                 
                 #print(fitness)
@@ -405,10 +408,12 @@ class TetrisApp(object):
             if not HEADLESS:
                 dont_burn_my_cpu.tick(maxfps)
                 for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        self.quit()
+                    pass
             #else:
             self.drop(False)
+        
+        del self.board
+
 
             
 
