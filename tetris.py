@@ -33,6 +33,10 @@ from heuristics import *
 
 from neat.math_util import mean, stdev
 from neat.six_util import itervalues, iterkeys
+import os
+import psutil
+process = psutil.Process(os.getpid())
+print(process.memory_percent())
 
 import matplotlib.pyplot as plt
 plt.style.use('seaborn-whitegrid')
@@ -148,6 +152,7 @@ def find_longest_streak(row):
         max_val = max(cnt, max_val) # update max count
     return max_val
 
+
 def calculate_fitness(score, board):
     fitness = score
     
@@ -189,14 +194,10 @@ class TetrisApp(object):
 
     def new_stone(self, first = False):
         if not first:
-            if self.prev_fitness == 0:
-                    fitness = compute_midgame_fitness(self.board)
-                    self.genome.fitness -= fitness
-                    self.prev_fitness = fitness
-            else:
-                fitness = compute_midgame_fitness(self.board) - self.prev_fitness
-                self.prev_fitness = fitness
-                self.genome.fitness -= fitness
+            move_fit, scores = compute_move_fitness(self.board, self.prev_fitness)
+            self.genome.fitness += move_fit
+            self.prev_fitness = scores
+            print(f"Move Fitness: {move_fit}, Scores: {scores}")
         self.stone = self.next_stone[:]
         self.next_stone = tetris_shapes[rand(len(tetris_shapes))]
         self.stone_x = int(cols / 2 - len(self.stone[0])/2)
@@ -275,7 +276,7 @@ class TetrisApp(object):
         self.lines += n
         if n > 0:
             print("Line Cleared")
-            self.genome.fitness += 10000
+            self.genome.fitness += 100 * n
         self.score += linescores[n] * self.level
         if self.lines >= self.level*6:
             self.level += 1
@@ -350,7 +351,7 @@ class TetrisApp(object):
             self.gameover = False
 
     def run(self, net, agent):
-        self.prev_fitness = 0
+        self.prev_fitness = None
         key_actions = {
             'LEFT':     lambda:self.move(-1),
             'RIGHT':    lambda:self.move(+1),
@@ -367,6 +368,8 @@ class TetrisApp(object):
         if not HEADLESS:
             dont_burn_my_cpu = pygame.time.Clock()
         while 1:
+
+            #print(process.memory_percent())
             if not HEADLESS:
                 try:
                     self.screen.fill((0,0,0))
@@ -374,7 +377,7 @@ class TetrisApp(object):
                     break
             if self.gameover:
                 
-                #print(fitness)
+                print(f"Genome fitness: {self.genome.fitness}")
                 return self.genome.fitness
             elif not HEADLESS:
                 pygame.draw.line(self.screen,(255,255,255),(self.rlim+1, 0),(self.rlim+1, self.height-1))
@@ -500,7 +503,6 @@ GEN = 0
 
 def eval_genomes(genomes, config):
     global GEN
-    nets = []
     ge = []
     
     GEN+=1
@@ -516,11 +518,10 @@ def eval_genomes(genomes, config):
         net = neat.nn.FeedForwardNetwork.create(genome, config)
         genome.fitness = 0
         ge.append(genome)
-        nets.append(net)
         App = TetrisApp(genome)
         App.run(net, genome)
         print(genome.fitness)
-        #del App
+        del App
         
     ids = []
     fits = []
@@ -542,7 +543,7 @@ if __name__ == '__main__':
     stats = neat.StatisticsReporter()
     population.add_reporter(stats)
 
-    winner = population.run(eval_genomes , 100)
+    winner = population.run(eval_genomes , None)
 
     with open(OUTPUT_FILE_PATH, "wb") as f:
         pickle.dump(winner, f)

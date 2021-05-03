@@ -52,7 +52,7 @@ def categorize_hole(board, hole):
     val += check_neighbor( hole, (0,1))
     val += check_neighbor( hole, (0,-1))
 
-    if val > 1:
+    if val > 2:
         return val
 
     return 0
@@ -99,6 +99,51 @@ def column_transitions(board):
 def pit_count(heights):
     return len([height for index, height in heights if height == 0])
     
+def get_fitness_stats(board):
+    board = clean_board(board)
+    transposed_board = transpose(board)
+    heights = get_column_height(board)
+
+    max_height = max([height for index, height in heights])
+
+    agheight = aggregate_height(heights)
+    bumps = bumpiness(heights)
+    pits = pit_count(heights)
+
+    holes = hole_count(board)
+    #print(f"Bumpiness: {bumps}, Holes: {holes}, Pits: {pits}")
+    del board
+    del transposed_board
+    return bumps, pits,  max_height, holes, agheight 
+
+def compute_move_fitness(board, prev_stats):
+    fitness = 0
+    bumps, pits,  max_height, holes, agheight = get_fitness_stats(board)
+    if prev_stats != None:
+        prev_bumps, prev_pits,  prev_max_height, prev_holes, prev_agheight = prev_stats
+
+        if prev_holes > holes: 
+            fitness += 20
+        else: fitness -= 5
+
+        if pits < prev_pits:
+            fitness += 5
+        
+        if abs(agheight - prev_agheight)< 1:
+            fitness += 5
+        
+        if max_height == prev_max_height:
+            fitness += 5
+        
+        if bumps < prev_bumps:
+            fitness += 10
+        else: fitness -= 5
+ 
+    return  fitness, (bumps, pits,  max_height, holes, agheight)
+        
+
+
+
 
 def compute_midgame_fitness(board):
     board = clean_board(board)
@@ -112,7 +157,7 @@ def compute_midgame_fitness(board):
     pits = pit_count(heights)
 
     holes = hole_count(board)
-    print(f"Bumpiness: {bumps}, Holes: {holes}, Pits: {pits}")
+    #print(f"Bumpiness: {bumps}, Holes: {holes}, Pits: {pits}")
     del board
     del transposed_board
     return bumps * .1 + pits + max_height  * .1+ holes * .5 + agheight 
