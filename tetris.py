@@ -210,7 +210,7 @@ class TetrisApp(object):
 
     def drop_timer(self, ):
         self.drop(False)
-        threading.Timer(self.drop_time, self.drop_timer).start()
+        #threading.Timer(self.drop_time, self.drop_timer).start()
 
     def init_game(self):
         self.board = new_board()
