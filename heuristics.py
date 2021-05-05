@@ -123,20 +123,20 @@ def compute_move_fitness(board, prev_stats):
         prev_bumps, prev_pits,  prev_max_height, prev_holes, prev_agheight = prev_stats
 
         if prev_holes > holes: 
-            fitness += 20
-        else: fitness -= 5
+            fitness += 30
+        else: fitness -= 12
 
         if pits < prev_pits:
             fitness += 5
         
-        if abs(agheight - prev_agheight)< 1:
+        if abs(agheight - prev_agheight)< 5:
             fitness += 5
         
         if max_height == prev_max_height:
             fitness += 5
         
         if bumps < prev_bumps:
-            fitness += 10
+            fitness += 15
         else: fitness -= 5
  
     return  fitness, (bumps, pits,  max_height, holes, agheight)
